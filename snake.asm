@@ -3,7 +3,10 @@ top equ 2
 row equ 15
 col equ 40
 right equ left+col
-bottom equ top+row
+bottom equ top+row 
+
+
+
 
 .model small
 .data          
@@ -12,6 +15,7 @@ bottom equ top+row
     quitmsg db "Thanks for playing! hope you enjoyed",0
     gameovermsg db "OOPS!! your snake died! :P ", 0
     scoremsg db "Score: ",0
+    select_speed_msg db 0AH,0DH,"Select speed level:",0AH,0DH,"1: Slow",0AH,0DH,"2: Medium",0AH,0DH,"3: Fast",0DH,0AH, "Press 1, 2 or 3: $"
     head db '^',10,10
     body db '*',10,11, 3*15 DUP(0)
     segmentcount db 1
@@ -20,8 +24,7 @@ bottom equ top+row
     fruity db 8
     gameover db 0
     quit db 0   
-    delaytime db 5
-
+    delaytime db 5  ;velocidad por defecto
 
 .stack
     dw   128  dup(0)
@@ -30,36 +33,66 @@ bottom equ top+row
 .code
 
 main proc far
-	mov ax, @data
-	mov ds, ax 
-	
-	mov ax, 0b800H
-	mov es, ax
-	
-	mov ax, 0003H
-	int 10H
-	
-	lea bx, msg
-	mov dx,00
-	call writestringat
-	
-	lea dx, instructions
-	mov ah, 09H
-	int 21h
-	
-	mov ah, 07h
-	int 21h
-	mov ax, 0003H
-	int 10H
-    call printbox      
+    mov ax, @data
+    mov ds, ax 
     
-mainloop:       
-    call delay             
+    mov ax, 0b800H
+    mov es, ax
+    
+    mov ax, 0003H
+    int 10H
+    
+    lea bx, msg
+    mov dx, 00
+    call writestringat
+    
+    lea dx, instructions
+    mov ah, 09H
+    int 21h
+    
+    mov ah, 07h
+    int 21h
+    mov ax, 0003H
+    int 10H
+    
+    ; Solicitar la selección de la velocidad
+    lea dx, select_speed_msg
+    mov ah, 09H
+    int 21h
+    
+    ; Leer la selección del usuario
+    call readchar
+    cmp dl, '1'
+    je set_slow_speed
+    cmp dl, '2'
+    je set_medium_speed
+    cmp dl, '3'
+    je set_fast_speed
+    
+
+
+set_slow_speed:
+    mov delaytime, 10
+    jmp continue_main
+
+set_medium_speed:
+    mov delaytime, 5
+    jmp continue_main
+
+set_fast_speed:
+    mov delaytime, 2
+    jmp continue_main
+
+continue_main:
+    call printbox
+
+mainloop:
+    call delay
     lea bx, msg
     mov dx, 00
     call writestringat
     call shiftsnake
-    cmp gameover,1
+    cmp gameover, 1
     je gameover_mainloop
     
     call keyboardfunctions
